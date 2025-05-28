@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hydrocarbon Rocket or Snake</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+        background-image: url(https://i.imgur.com/V5L4NAT.jpeg); /* contoh URL gambar */
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+    }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 3px;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+        .cell {
+            border: 2px solid #ddd;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            min-height: 60px;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+        .player {
+            background-color: rgba(144, 238, 144, 0.7) !important;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            50% { opacity: 0.7; }
+        }
+        .ladder {
+            color: #2e7d32;
+        }
+        .snake {
+            color: #c62828;
+        }
+        .sticker {
+            font-size: 1.5em;
+            position: absolute;
+            opacity: 0.8;
+        }
+        .dice-container {
+            perspective: 1000px;
+            margin: 20px auto;
+        }
+
+        .dice {
+            width: 100px;
+            height: 100px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 1.5s ease-out;
+        }
+
+        .dice-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: white;
+            border: 3px solid #333;
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        /* Posisi masing-masing wajah dadu */
+        .front  { transform: translateZ(50px); }
+        .back   { transform: rotateX(-180deg) translateZ(50px); }
+        .right  { transform: rotateY(90deg) translateZ(50px); }
+        .left   { transform: rotateY(-90deg) translateZ(50px); }
+        .top    { transform: rotateX(90deg) translateZ(50px); }
+        .bottom { transform: rotateX(-90deg) translateZ(50px); }
+
+        @keyframes shake {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(15deg); }
+            50% { transform: rotate(-15deg); }
+            75% { transform: rotate(10deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        .rolling {
+            animation: shake 0.5s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="container">
+    <h1 class="text-center my-4">🐍🚀Hydrocarbon Rocket or Snake🚀🐍</h1>
+    <h2 class="text-center mb-3 text-primary">📚Educative Game by Salsa🧪</h2>
+
+    <div class="dice-container text-center">
+        <div id="dice" class="dice">
+            <div class="dice-face front">1</div>
+            <div class="dice-face back">2</div>
+            <div class="dice-face right">3</div>
+            <div class="dice-face left">4</div>
+            <div class="dice-face top">5</div>
+            <div class="dice-face bottom">6</div>
+        </div>
+    </div>
+
+    <div id="board" class="board"></div>
+    
+    <div class="text-center">
+        <p>Posisi: <span id="position">0</span> | Skor: <span id="score">0</span>/100</p>
+        <button id="rollDice" class="btn btn-danger mb-3">🎲 Lempar Dadu</button>
+    </div>
+
+    <div class="modal fade" id="questionModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="questionText"></h5>
+                </div>
+                <div class="modal-body">
+                    <p id="clueText"></p>
+                    <input type="text" class="form-control" id="answerInput">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="checkAnswer()">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let position = 0;
+        let score = 0;
+
+        // Fungsi rollDice baru
+    function rollDice() {
+        const dice = document.getElementById('dice');
+        const btn = document.getElementById('rollDice');
+        btn.disabled = true;
+        
+        const randomRotation = {
+            x: Math.floor(Math.random() * 10 + 15) * 90,
+            y: Math.floor(Math.random() * 10 + 15) * 90,
+            z: Math.floor(Math.random() * 10 + 15) * 90
+        };
+
+        dice.style.transform = `rotateX(${randomRotation.x}deg) rotateY(${randomRotation.y}deg) rotateZ(${randomRotation.z}deg)`;
+        dice.classList.add('rolling');
+
+        const result = Math.floor(Math.random() * 6) + 1;
+        
+        return new Promise(resolve => {
+            setTimeout(() => {
+                dice.classList.remove('rolling');
+                btn.disabled = false;
+                resolve(result);
+            }, 1500);
+        });
+    }
+
+        // Fungsi pembuat warna pastel
+        function getPastelColor() {
+            const hue = Math.floor(Math.random() * 360);
+            const saturation = Math.floor(Math.random() * 20 + 70);
+            const lightness = Math.floor(Math.random() * 10 + 80);
+            return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        }
+
+        const allQuestions = [
+            { question: "Apa rumus kimia metana?", answer: "ch4", clue: "Senyawa alkana paling sederhana" },
+            { question: "Apa rumus umum alkena?", answer: "cnh2n", clue: "Dua atom H lebih sedikit dari alkana" },
+            { question: "Apa jenis ikatan pada alkuna?", answer: "rangkap tiga", clue: "Lebih kuat dari rangkap dua" },
+            { question: "Apakah etanol termasuk hidrokarbon jenuh?", answer: "tidak", clue: "Mengandung gugus -OH" },
+            { question: "Apa gugus fungsi asam karboksilat?", answer: "cooh", clue: "Terdiri dari gugus karbonil dan hidroksil" },
+            { question: "Ester terbentuk dari reaksi antara...?", answer: "asam karboksilat dan alkohol", clue: "Campuran dua senyawa organik" },
+            { question: "Apakah propana jenuh atau tak jenuh?", answer: "jenuh", clue: "Termasuk alkana" },
+            { question: "Apakah propena memiliki ikatan rangkap?", answer: "ya", clue: "Termasuk alkena" },
+            { question: "Apa ciri khas senyawa aromatik?", answer: "cincin benzena", clue: "Struktur melingkar dengan elektron delokalisasi" },
+            { question: "Toluen merupakan turunan dari...?", answer: "benzena", clue: "Memiliki gugus metil" },
+            { question: "Contoh hidrokarbon aromatik selain benzena?", answer: "naftalena", clue: "Digunakan pada kapur barus" },
+            { question: "Contoh senyawa alkuna?", answer: "etuna", clue: "2 atom C dan ikatan rangkap tiga" },
+            { question: "Apa rumus umum alkana?", answer: "cnh2n+2", clue: "Jumlah H paling banyak" },
+            { question: "Hidrokarbon terbagi menjadi berapa kelompok utama?", answer: "2", clue: "Jenuh dan tak jenuh" },
+            { question: "Toluena mengandung gugus?", answer: "metil", clue: "CH3 pada cincin" },
+            { question: "Apa rumus umum alkuna?", answer: "cnh2n-2", clue: "Lebih sedikit H karena ikatan rangkap tiga" },
+            { question: "Hidrokarbon aromatik memiliki struktur?", answer: "cincin", clue: "Sama seperti benzena" },
+            { question: "Apakah etuna termasuk alkuna?", answer: "ya", clue: "Memiliki ikatan rangkap tiga" },
+            { question: "Apa kegunaan etena?", answer: "bahan baku plastik", clue: "Polimer penting" },
+            { question: "Berapa jumlah ikatan dalam etuna?", answer: "tiga", clue: "Satu rangkap tiga" },
+            { question: "Alkana digunakan untuk?", answer: "bahan bakar", clue: "Contohnya LPG" },
+            { question: "Ciri senyawa tak jenuh?", answer: "ikatan rangkap", clue: "Bisa ganda atau tiga" },
+            { question: "Gugus fungsi pada aldehid?", answer: "cho", clue: "Hanya satu O" },
+            { question: "Ciri alkuna?", answer: "ikatan rangkap tiga", clue: "Lebih reaktif" },
+            { question: "Apakah CH≡CH merupakan alkuna?", answer: "ya", clue: "Rumus etuna" },
+            // 25 soal tambahan cadangan:
+            { question: "Apa itu senyawa hidrokarbon?", answer: "senyawa yang terdiri dari C dan H", clue: "Hanya mengandung karbon dan hidrogen" },
+            { question: "Apa peran gugus -OH pada alkohol? Menentukan sifat....", answer: "polar", clue: "Membuat senyawa larut air" },
+            { question: "Hidrokarbon jenuh termasuk golongan?", answer: "alkana", clue: "Ikatan tunggal semua" },
+            { question: "Berapa jumlah atom H dalam etana?", answer: "6", clue: "2 C dan 6 H" },
+            { question: "Contoh hidrokarbon aromatik selain benzena?", answer: "naftalena", clue: "Digunakan pada kapur barus" },
+            { question: "Apakah propena memiliki 3 atom C?", answer: "ya", clue: "Nama awalan 'prop'" },
+            { question: "Etuna termasuk golongan apa?", answer: "alkuna", clue: "Ikatan rangkap tiga" },
+            { question: "Apa fungsi gugus metil?", answer: "menambah rantai karbon", clue: "CH3" },
+            { question: "Apakah butana merupakan alkana?", answer: "ya", clue: "C4H10" },
+            { question: "Ciri utama alkena?", answer: "ikatan rangkap dua", clue: "Lebih reaktif dari alkana" },
+            { question: "Toluena mengandung gugus?", answer: "metil", clue: "CH3 pada cincin" },
+            { question: "Apa kegunaan etanol?", answer: "pelarut", clue: "Digunakan di laboratorium" },
+            { question: "Benzena termasuk senyawa?", answer: "aromatik", clue: "Memiliki cincin terdelokalisasi" },
+            { question: "Hidrokarbon digunakan sebagai?", answer: "bahan bakar", clue: "Minyak bumi" },
+            { question: "Jumlah atom C pada propana?", answer: "3", clue: "Awalan 'prop'" },
+            { question: "Gugus fungsi pada aldehid?", answer: "cho", clue: "Hanya satu O" },
+            { question: "Benzil alkohol adalah?", answer: "alkohol aromatik", clue: "Memiliki gugus -OH dan cincin" },
+            { question: "Apakah etana dan etena isomer?", answer: "tidak", clue: "Jenis ikatannya beda" },
+            { question: "Senyawa dengan 5 atom C disebut?", answer: "pentana", clue: "Awalan 'pent'" },
+            { question: "Berapa H dalam C5H10?", answer: "10", clue: "Rumus alkena" },
+            { question: "Rumus molekul butena?", answer: "c4h8", clue: "Alkena 4 atom C" },
+            { question: "Etuna punya ikatan apa?", answer: "rangkap tiga", clue: "Alkuna paling sederhana" },
+            { question: "Apakah sikloheksana termasuk aromatik?", answer: "tidak", clue: "Tidak ada ikatan rangkap delokalisasi" },
+            { question: "Senyawa hidrokarbon dari minyak bumi?", answer: "alkana", clue: "Digunakan untuk LPG" }
+        ];
+
+        const selectedQuestions = allQuestions.sort(() => 0.5 - Math.random()).slice(0, 25);
+
+        const paths = {
+            3: 22, 8: 34, 28: 44, 35: 49, 41: 59,
+            46: 66, 70: 88, 81: 95,
+            17: 7, 30: 10, 33: 12, 39: 15, 55: 23, 63: 35,
+            84: 42, 91: 48, 96: 50, 99: 52
+        };
+
+        function initBoard() {
+            const board = document.getElementById('board');
+            for(let i = 100; i > 0; i--) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.id = `cell${i}`;
+                cell.innerHTML = i;
+                cell.style.backgroundColor = getPastelColor();
+
+                if(i in paths) {
+                    const isLadder = paths[i] > i;
+                    const sticker = document.createElement('div');
+                    sticker.className = 'sticker';
+                    sticker.innerHTML = isLadder ? '🚀⬆' : '🐍⬇';
+                    sticker.style.top = isLadder ? '5px' : '25px';
+                    cell.appendChild(sticker);
+                    cell.classList.add(isLadder ? 'ladder' : 'snake');
+                }
+
+                board.appendChild(cell);
+            }
+        }
+
+        function updatePosition(newPos) {
+            document.getElementById(`cell${position}`)?.classList.remove('player');
+            position = newPos;
+            document.getElementById('position').textContent = position;
+            const currentCell = document.getElementById(`cell${position}`);
+            currentCell?.classList.add('player');
+            
+            if(position in paths) {
+                const target = paths[position];
+                setTimeout(() => {
+                    if(paths[position] > position) {
+                        alert(`🚀 Naik tangga ke ${target}!`);
+                    } else {
+                        alert(`🐍 Kena ular! Turun ke ${target} dan -2 poin`);
+                        score = Math.max(0, score - 2);
+                        document.getElementById('score').textContent = score;
+                    }
+                    updatePosition(target);
+                }, 500);
+            }
+        }
+
+        function showQuestion() {
+            const index = Math.floor(position / 4) % selectedQuestions.length;
+            const q = selectedQuestions[index];
+            document.getElementById('questionText').textContent = q.question;
+            document.getElementById('clueText').textContent = `Clue: ${q.clue}`;
+            new bootstrap.Modal(document.getElementById('questionModal')).show();
+        }
+
+        function checkAnswer() {
+            const userAnswer = document.getElementById('answerInput').value.toLowerCase().trim();
+            const index = Math.floor(position / 4) % selectedQuestions.length;
+            const q = selectedQuestions[index];
+            
+            if(q.answer.includes(userAnswer)) {
+                score += 4;
+                document.getElementById('score').textContent = score;
+                alert('🎉 Benar! +4 poin');
+            } else {
+                alert(`😢 Salah! Jawaban: ${q.answer}`);
+            }
+
+            document.getElementById('answerInput').value = '';
+            bootstrap.Modal.getInstance(document.getElementById('questionModal')).hide();
+        }
+
+        document.getElementById('rollDice').addEventListener('click', async () => {
+    const btn = document.getElementById('rollDice');
+    btn.disabled = true; // Nonaktifkan tombol selama animasi
+    
+    try {
+        const result = await rollDice(); // Tunggu hasil putaran dadu
+        const newPos = position + result;
+        
+        updatePosition(newPos > 100 ? position : newPos);
+        if(newPos <= 100) showQuestion();
+        
+        if(newPos >= 100) {
+            alert("🏆 SELAMAT! Anda Menang!");
+        }
+    } finally {
+        btn.disabled = false; // Pastikan tombol kembali aktif
+        btn.innerHTML = '🎲 Lempar Dadu'; // Reset teks tombol
+    }
+});
+
+        initBoard();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
